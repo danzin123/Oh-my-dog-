@@ -322,22 +322,20 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
       </div>
 
       {/* Header */}
-      <header className="sticky top-0 z-40 backdrop-blur-md bg-background/80 border-b border-card-border">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-40 backdrop-blur-md bg-background/90 border-b border-card-border shadow-lg">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               id="header-logo"
               src="/logo.jpg" 
               alt="Logo Oh my Dog!" 
-              className="w-12 h-12 object-contain rounded-lg shadow-lg"
+              className="w-16 h-16 object-contain rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-white/10"
               onError={(e) => {
                 const img = e.currentTarget;
                 if (img.src.endsWith('/logo.jpg')) {
-                  // Se falhar o .jpg, tenta carregar o .png
                   img.src = '/logo.png';
                 } else {
-                  // Se ambos falharem, esconde a imagem e mostra o emoji
                   img.style.display = 'none';
                   const fallback = document.getElementById('header-logo-fallback');
                   if (fallback) fallback.classList.remove('hidden');
@@ -346,26 +344,27 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
             />
             
             <div id="header-logo-fallback" className="flex items-center gap-2 hidden">
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center font-bold text-lg text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]">
+              <div className="w-14 h-14 rounded-xl bg-primary flex items-center justify-center font-bold text-2xl text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]">
                 🌭
               </div>
             </div>
 
-            <div>
-              <h1 className="font-extrabold text-xl tracking-tight text-white">
-                Oh my <span className="text-primary font-black">Dog!</span>
+            <div className="flex flex-col">
+              <h1 className="font-black text-2xl md:text-3xl tracking-tight leading-none">
+                <span className="text-white">Oh my </span>
+                <span className="text-primary drop-shadow-[0_0_8px_rgba(239,68,68,0.6)]">Dog!</span>
               </h1>
-              <p className="text-[10px] text-muted tracking-wide uppercase font-semibold">Os melhores hotdogs da região</p>
+              <p className="text-[11px] text-stone-400 tracking-widest uppercase font-semibold mt-0.5">Os melhores hotdogs da região</p>
             </div>
           </div>
           
           <button 
             onClick={() => setIsCartOpen(true)}
-            className="relative p-2.5 rounded-full bg-card-bg border border-card-border hover:border-primary transition-all duration-300"
+            className="relative p-3 rounded-xl bg-card-bg border border-card-border hover:border-primary hover:shadow-[0_0_12px_rgba(239,68,68,0.2)] transition-all duration-300"
           >
-            <ShoppingBag size={20} className="text-stone-100" />
+            <ShoppingBag size={22} className="text-stone-100" />
             {cart.length > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-[11px] font-bold rounded-full flex items-center justify-center animate-pulse">
+              <span className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-primary text-white text-[11px] font-black rounded-full flex items-center justify-center shadow-lg">
                 {cart.reduce((a, b) => a + b.quantity, 0)}
               </span>
             )}
@@ -375,20 +374,27 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
 
       {/* Banner / Hero */}
       <section className="max-w-5xl mx-auto px-4 mt-6">
-        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-primary/30 to-accent/20 p-8 border border-card-border flex flex-col md:flex-row justify-between items-center gap-6">
+        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-red-950/60 via-stone-950 to-amber-950/30 p-8 border border-red-900/30 flex flex-col md:flex-row justify-between items-center gap-6">
+          {/* Glows */}
+          <div className="absolute top-0 left-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="absolute bottom-0 right-10 w-40 h-40 bg-amber-600/10 rounded-full blur-3xl pointer-events-none"></div>
+          
           <div className="z-10 text-center md:text-left">
-            <span className="bg-primary/20 text-primary border border-primary/30 px-3.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">Promoção Especial</span>
-            <h2 className="text-3xl md:text-4xl font-extrabold text-white mt-4 tracking-tight leading-tight">
-              Sabor Gigante, <br />Preço que cabe no bolso.
+            <span className="inline-flex items-center gap-1.5 bg-primary/15 text-primary border border-primary/25 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest">
+              🔥 Promoção Especial
+            </span>
+            <h2 className="text-3xl md:text-5xl font-black text-white mt-4 tracking-tight leading-tight">
+              Sabor Gigante,{' '}
+              <span className="text-primary drop-shadow-[0_0_12px_rgba(239,68,68,0.5)]">preço</span>{' '}
+              <br className="hidden md:block" />que cabe no bolso.
             </h2>
-            <p className="text-muted mt-2 text-sm max-w-md">Queijo derretido, salsicha artesanal e pão de brioche assado na hora. Peça já o seu!</p>
+            <p className="text-stone-400 mt-3 text-sm md:text-base max-w-md leading-relaxed">
+              Queijo derretido, salsicha artesanal e pão de brioche assado na hora.
+            </p>
           </div>
-          <div className="relative w-48 h-32 md:w-64 md:h-44 flex items-center justify-center text-8xl md:text-9xl drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] select-none animate-bounce duration-1000">
+          <div className="relative flex items-center justify-center text-8xl md:text-[7rem] drop-shadow-[0_10px_30px_rgba(0,0,0,0.6)] select-none" style={{animation: 'bounce 2s infinite'}}>
             🌭
           </div>
-          {/* Decorative glow elements */}
-          <div className="absolute top-0 right-1/4 w-32 h-32 bg-primary/20 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 right-10 w-32 h-32 bg-accent/20 rounded-full blur-3xl"></div>
         </div>
       </section>
 
@@ -399,10 +405,10 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`px-5 py-2.5 rounded-full font-bold text-sm tracking-wide transition-all duration-300 cursor-pointer whitespace-nowrap ${
+              className={`px-6 py-2.5 rounded-full font-bold text-sm tracking-wide transition-all duration-300 cursor-pointer whitespace-nowrap border ${
                 activeCategory === cat.id
-                  ? 'bg-primary text-white shadow-[0_4px_12px_rgba(239,68,68,0.3)]'
-                  : 'bg-card-bg text-stone-300 border border-card-border hover:bg-stone-800'
+                  ? 'bg-primary border-primary text-white shadow-[0_4px_16px_rgba(239,68,68,0.35)]'
+                  : 'bg-card-bg border-card-border text-stone-400 hover:border-stone-600 hover:text-white'
               }`}
             >
               {cat.label}
@@ -412,60 +418,62 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
       </section>
 
       {/* Lista de Produtos */}
-      <main className="max-w-5xl mx-auto px-4 mt-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <main className="max-w-5xl mx-auto px-4 mt-6 pb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredProducts.map((product) => {
             const hasPromo = product.promotionalPrice !== null;
             return (
               <div 
                 key={product.id}
-                className="bg-card-bg border border-card-border rounded-xl p-4 flex gap-4 hover:border-stone-700 transition-all duration-300 group shadow-lg"
+                className="bg-card-bg border border-card-border rounded-2xl p-4 flex gap-4 hover:border-stone-600 hover:shadow-[0_4px_20px_rgba(0,0,0,0.4)] transition-all duration-300 group"
               >
-                <div className="relative w-28 h-28 flex-shrink-0 bg-stone-900 rounded-lg overflow-hidden border border-card-border">
+                {/* Imagem */}
+                <div className="relative w-28 h-28 flex-shrink-0 bg-stone-900 rounded-xl overflow-hidden border border-stone-800">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src={product.imageUrl || '/placeholder.png'} 
                     alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                   {hasPromo && (
-                    <span className="absolute top-1.5 left-1.5 bg-primary text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow">
+                    <span className="absolute top-1.5 left-1.5 bg-primary text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md shadow-lg">
                       PROMO
                     </span>
                   )}
                 </div>
                 
-                <div className="flex flex-col justify-between flex-grow">
+                {/* Informações */}
+                <div className="flex flex-col justify-between flex-grow min-w-0">
                   <div>
-                    <h3 className="font-extrabold text-base text-stone-100 group-hover:text-primary transition-colors">
+                    <h3 className="font-black text-base text-stone-100 group-hover:text-primary transition-colors leading-snug">
                       {product.name}
                     </h3>
-                    <p className="text-xs text-muted mt-1 line-clamp-2">
+                    <p className="text-xs text-stone-500 mt-1.5 line-clamp-2 leading-relaxed">
                       {product.description}
                     </p>
                   </div>
                   
                   <div className="flex items-center justify-between mt-3">
-                    <div className="flex items-baseline gap-1.5">
+                    <div className="flex flex-col">
                       {hasPromo ? (
                         <>
-                          <span className="text-lg font-black text-white">
-                            R$ {parseFloat(product.promotionalPrice!).toFixed(2)}
+                          <span className="text-xl font-black text-white leading-none">
+                            R$ {parseFloat(product.promotionalPrice!).toFixed(2).replace('.', ',')}
                           </span>
-                          <span className="text-xs text-muted line-through">
-                            R$ {parseFloat(product.price).toFixed(2)}
+                          <span className="text-[11px] text-stone-600 line-through mt-0.5">
+                            de R$ {parseFloat(product.price).toFixed(2).replace('.', ',')}
                           </span>
                         </>
                       ) : (
-                        <span className="text-lg font-black text-white">
-                          R$ {parseFloat(product.price).toFixed(2)}
+                        <span className="text-xl font-black text-white leading-none">
+                          R$ {parseFloat(product.price).toFixed(2).replace('.', ',')}
                         </span>
                       )}
                     </div>
                     
                     <button
                       onClick={() => addToCart(product)}
-                      className="p-1.5 rounded-full bg-primary hover:bg-primary-hover text-white transition-all cursor-pointer shadow-[0_2px_8px_rgba(239,68,68,0.2)] hover:scale-105"
+                      className="w-9 h-9 rounded-xl bg-primary hover:bg-primary-hover text-white transition-all cursor-pointer shadow-[0_4px_12px_rgba(239,68,68,0.3)] hover:scale-110 flex items-center justify-center flex-shrink-0"
                     >
                       <Plus size={18} />
                     </button>
