@@ -9,11 +9,22 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: 'Não autorizado' }, { status: 401 });
     }
 
-    // 2. Buscar todos os pedidos pagos
-    const paidOrders = await prisma.order.findMany({
-      where: { paymentStatus: 'PAID' },
-      orderBy: { createdAt: 'desc' }
+    // 2. Calcular métricas via agregações rápidas no banco
+    const aggregations = await prisma.order.aggregate({
+      _sum: {
+        total: true
+      },
+      _count: {
+        _all: true
+      },
+      where: {
+        paymentStatus: 'PAID'
+      }
     });
+
+    const totalRevenue = aggregations._sum.total ? parseFloat(aggregations._sum.total.toString()) : 0;
+    const totalOrders = aggregations._count._all;
+    const ticketMedio = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
     // 3. Buscar os pedidos recentes (qualquer status, últimos 20)
     const recentOrders = await prisma.order.findMany({
@@ -24,12 +35,21 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    // 4. Calcular métricas
-    const totalRevenue = paidOrders.reduce((acc, o) => acc + parseFloat(o.total.toString()), 0);
-    const totalOrders = paidOrders.length;
-    const ticketMedio = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    // 4. Faturamento dos últimos 15 dias (para o gráfico) - filtramos apenas os últimos 15 dias para otimização
+    const fifteenDaysAgo = new Date();
+    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
 
-    // Faturamento dos últimos 15 dias (para o gráfico)
+    const paidOrdersLast15Days = await prisma.order.findMany({
+      where: {
+        paymentStatus: 'PAID',
+        createdAt: { gte: fifteenDaysAgo }
+      },
+      select: {
+        total: true,
+        createdAt: true
+      }
+    });
+
     const last15Days: { date: string; dateObject: Date; revenue: number; ordersCount: number }[] = [];
     for (let i = 14; i >= 0; i--) {
       const d = new Date();
@@ -43,8 +63,8 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Agrupar faturamento por dia
-    paidOrders.forEach(order => {
+    // Agrupar faturamento por dia usando apenas o subset otimizado
+    paidOrdersLast15Days.forEach(order => {
       const orderDateStr = new Date(order.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
       const dayData = last15Days.find(d => d.date === orderDateStr);
       if (dayData) {
