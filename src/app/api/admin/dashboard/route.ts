@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
     const ticketMedio = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
     // Faturamento dos últimos 15 dias (para o gráfico)
-    const last15Days = [];
+    const last15Days: { date: string; dateObject: Date; revenue: number; ordersCount: number }[] = [];
     for (let i = 14; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
