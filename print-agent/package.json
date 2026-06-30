@@ -1,0 +1,13 @@
+{
+  "name": "oh-my-dog-print-agent",
+  "version": "1.0.0",
+  "description": "Agente de Impressão Térmica para o Oh my Dog",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "node-thermal-printer": "^4.4.0"
+  }
+}

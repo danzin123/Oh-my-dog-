@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id               String   @id @default(cuid())
+  name             String
+  description      String
+  price            Decimal
+  promotionalPrice Decimal?
+  imageUrl         String?
+  category         String   // "HOTDOG", "DRINK", "PORTION", etc.
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Order {
+  id                   String      @id @default(cuid())
+  clientName           String
+  clientPhone          String
+  notes                String?
+  paymentStatus        String      @default("PENDING") // "PENDING", "PAID", "FAILED", "REFUNDED"
+  orderStatus          String      @default("RECEIVED") // "RECEIVED", "PREPARING", "READY", "DELIVERED"
+  total                Decimal
+  paymentMethod        String      // "PIX", "CREDIT_CARD"
+  pagarmeTransactionId String?     @unique
+  qrcodeUrl            String?
+  qrcodeCopyPaste      String?
+  items                OrderItem[]
+  printQueue           PrintQueue?
+  
+  // Detalhes de entrega
+  deliveryType         String      @default("WITHDRAWAL") // "DELIVERY", "WITHDRAWAL"
+  deliveryFee          Decimal     @default(0)
+  neighborhoodName     String?
+  addressStreet        String?
+  addressNumber        String?
+  addressReference     String?
+
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+}
+
+model OrderItem {
+  id           String  @id @default(cuid())
+  orderId      String
+  order        Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String
+  productName  String
+  productPrice Decimal
+  quantity     Int
+}
+
+model PrintQueue {
+  id        String    @id @default(cuid())
+  orderId   String    @unique
+  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  printed   Boolean   @default(false)
+  printedAt DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model Coupon {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  discountType  String    // "PERCENTAGE", "FIXED"
+  value         Decimal
+  minOrderValue Decimal?
+  expiresAt     DateTime?
+  active        Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+}
+
+model Neighborhood {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  deliveryFee Decimal
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
