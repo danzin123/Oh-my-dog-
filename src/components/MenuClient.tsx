@@ -324,10 +324,27 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
       {/* Header */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/80 border-b border-card-border">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center font-bold text-lg text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]">
-              🌭
+          <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img 
+              id="header-logo"
+              src="/logo.png" 
+              alt="Logo Oh my Dog!" 
+              className="w-12 h-12 object-contain rounded-lg shadow-lg"
+              onError={(e) => {
+                // Esconde a imagem se o arquivo não existir e mostra o fallback de texto/emoji
+                e.currentTarget.style.display = 'none';
+                const fallback = document.getElementById('header-logo-fallback');
+                if (fallback) fallback.classList.remove('hidden');
+              }}
+            />
+            
+            <div id="header-logo-fallback" className="flex items-center gap-2 hidden">
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center font-bold text-lg text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]">
+                🌭
+              </div>
             </div>
+
             <div>
               <h1 className="font-extrabold text-xl tracking-tight text-white">
                 Oh my <span className="text-primary font-black">Dog!</span>
