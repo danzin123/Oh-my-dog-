@@ -328,14 +328,20 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img 
               id="header-logo"
-              src="/logo.png" 
+              src="/logo.jpg" 
               alt="Logo Oh my Dog!" 
               className="w-12 h-12 object-contain rounded-lg shadow-lg"
               onError={(e) => {
-                // Esconde a imagem se o arquivo não existir e mostra o fallback de texto/emoji
-                e.currentTarget.style.display = 'none';
-                const fallback = document.getElementById('header-logo-fallback');
-                if (fallback) fallback.classList.remove('hidden');
+                const img = e.currentTarget;
+                if (img.src.endsWith('/logo.jpg')) {
+                  // Se falhar o .jpg, tenta carregar o .png
+                  img.src = '/logo.png';
+                } else {
+                  // Se ambos falharem, esconde a imagem e mostra o emoji
+                  img.style.display = 'none';
+                  const fallback = document.getElementById('header-logo-fallback');
+                  if (fallback) fallback.classList.remove('hidden');
+                }
               }}
             />
             
