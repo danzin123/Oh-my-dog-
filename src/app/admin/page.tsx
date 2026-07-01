@@ -931,6 +931,7 @@ export default function AdminPage() {
                       ))}
                     </tbody>
                   </table>
+                </div>
               </div>
 
               {/* Detalhamento de Taxas do Motoboy (Hoje) */}
