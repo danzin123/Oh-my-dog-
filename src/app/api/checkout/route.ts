@@ -77,6 +77,13 @@ export async function POST(req: NextRequest) {
       
       neighborhoodName = addressNeighborhood.trim();
       const calcResult = await getDeliveryFee(addressStreet, addressNumber, neighborhoodName);
+      
+      if (calcResult.maxDistanceExceeded) {
+        return NextResponse.json({ 
+          message: `Desculpe, seu endereço fica a ${calcResult.distanceKm?.toFixed(1)} km de distância, o que ultrapassa nosso raio de entrega limite de ${calcResult.maxDistanceKm} km.` 
+        }, { status: 400 });
+      }
+
       deliveryFee = calcResult.fee;
       console.log(`[Checkout API] Taxa de entrega calculada para "${addressStreet}, ${addressNumber} - ${neighborhoodName}": R$ ${deliveryFee} (via ${calcResult.source})`);
     }

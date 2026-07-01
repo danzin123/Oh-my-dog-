@@ -116,5 +116,10 @@ model StoreSettings {
   deliveryMaxDistanceKm Decimal @default(10.00)
   estimatedDeliveryTime Int     @default(40) // minutos
 
+  // Integração WhatsApp
+  whatsappApiUrl   String @default("")
+  whatsappApiToken String @default("")
+  whatsappInstance String @default("")
+
   updatedAt DateTime @updatedAt
 }

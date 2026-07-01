@@ -9,6 +9,42 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ message: 'Não autorizado' }, { status: 401 });
     }
 
+    // 1.1. Obter período selecionado
+    const { searchParams } = new URL(req.url);
+    const period = searchParams.get('period') || 'ALL'; // TODAY, YESTERDAY, LAST_7, MONTH, ALL
+
+    let dateQuery: any = undefined;
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+    
+    if (period === 'TODAY') {
+      const todaySPStr = now.toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }).split(' ')[0];
+      const startUTC = new Date(`${todaySPStr}T00:00:00.000-03:00`);
+      dateQuery = { gte: startUTC };
+    } else if (period === 'YESTERDAY') {
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdaySPStr = yesterday.toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }).split(' ')[0];
+      const startUTC = new Date(`${yesterdaySPStr}T00:00:00.000-03:00`);
+      const endUTC = new Date(`${yesterdaySPStr}T23:59:59.999-03:00`);
+      dateQuery = { gte: startUTC, lte: endUTC };
+    } else if (period === 'LAST_7') {
+      const last7 = new Date(now);
+      last7.setDate(last7.getDate() - 7);
+      const last7SPStr = last7.toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }).split(' ')[0];
+      const startUTC = new Date(`${last7SPStr}T00:00:00.000-03:00`);
+      dateQuery = { gte: startUTC };
+    } else if (period === 'MONTH') {
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const monthStartSPStr = monthStart.toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }).split(' ')[0];
+      const startUTC = new Date(`${monthStartSPStr}T00:00:00.000-03:00`);
+      dateQuery = { gte: startUTC };
+    }
+
+    const metricsWhere: any = { paymentStatus: 'PAID' };
+    if (dateQuery) {
+      metricsWhere.createdAt = dateQuery;
+    }
+
     // 2. Calcular métricas via agregações rápidas no banco
     const aggregations = await prisma.order.aggregate({
       _sum: {
@@ -17,39 +53,44 @@ export async function GET(req: NextRequest) {
       _count: {
         _all: true
       },
-      where: {
-        paymentStatus: 'PAID'
-      }
+      where: metricsWhere
     });
 
     const totalRevenue = aggregations._sum.total ? parseFloat(aggregations._sum.total.toString()) : 0;
     const totalOrders = aggregations._count._all;
     const ticketMedio = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-    // 3. Buscar os pedidos recentes (qualquer status, últimos 20)
+    // 3. Buscar os pedidos recentes (qualquer status)
+    const recentOrdersWhere: any = {};
+    if (dateQuery) {
+      recentOrdersWhere.createdAt = dateQuery;
+    }
     const recentOrders = await prisma.order.findMany({
-      take: 20,
+      where: recentOrdersWhere,
+      take: period === 'ALL' ? 20 : undefined,
       orderBy: { createdAt: 'desc' },
       include: {
         items: true
       }
     });
 
-    // 3.1. Calcular taxa de entrega acumulada para motoboy hoje (Fuso SP)
-    const todaySPString = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-    const startOfYesterday = new Date();
-    startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+    // 3.1. Calcular taxa de entrega acumulada para motoboy no período
+    const motoboyWhere: any = {
+      deliveryType: 'DELIVERY',
+      paymentStatus: 'PAID'
+    };
+    if (dateQuery) {
+      motoboyWhere.createdAt = dateQuery;
+    } else {
+      // Se for "ALL", calcula apenas para hoje por padrão para manter o card limpo
+      const todaySPStr = now.toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }).split(' ')[0];
+      const startUTC = new Date(`${todaySPStr}T00:00:00.000-03:00`);
+      motoboyWhere.createdAt = { gte: startUTC };
+    }
 
-    const candidateOrders = await prisma.order.findMany({
-      where: {
-        createdAt: { gte: startOfYesterday }
-      },
+    const motoboyOrdersToday = await prisma.order.findMany({
+      where: motoboyWhere,
       orderBy: { createdAt: 'desc' }
-    });
-
-    const motoboyOrdersToday = candidateOrders.filter(o => {
-      const orderDateStr = new Date(o.createdAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-      return o.deliveryType === 'DELIVERY' && o.paymentStatus === 'PAID' && orderDateStr === todaySPString;
     });
 
     const todayMotoboyRevenue = motoboyOrdersToday.reduce((sum, o) => sum + parseFloat(o.deliveryFee.toString()), 0);

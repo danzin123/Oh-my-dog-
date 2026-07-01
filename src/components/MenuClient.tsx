@@ -126,6 +126,7 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState('');
   const [deliveryFee, setDeliveryFee] = useState(0);
+  const [deliveryError, setDeliveryError] = useState('');
 
   // Fetch neighborhoods on mount (retained for database fallbacks reference if needed)
   useEffect(() => {
@@ -138,15 +139,25 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
   // Fetch delivery fee dynamically as user types address details
   useEffect(() => {
     if (deliveryType === 'DELIVERY' && addressStreet.trim() && addressNeighborhood.trim()) {
+      setDeliveryError('');
       const controller = new AbortController();
       const delayDebounce = setTimeout(() => {
         fetch(`/api/delivery-fee?street=${encodeURIComponent(addressStreet)}&number=${encodeURIComponent(addressNumber)}&neighborhood=${encodeURIComponent(addressNeighborhood)}`, { signal: controller.signal })
           .then(res => res.json())
           .then(data => {
-            setDeliveryFee(data.fee || 0);
+            if (data.maxDistanceExceeded) {
+              setDeliveryFee(0);
+              setDeliveryError(`Desculpe, seu endereço fica a ${data.distanceKm?.toFixed(1)} km, o que excede nosso raio de entrega máximo de ${data.maxDistanceKm} km.`);
+            } else {
+              setDeliveryFee(data.fee || 0);
+              setDeliveryError('');
+            }
           })
           .catch(err => {
-            if (err.name !== 'AbortError') console.error('Erro ao buscar taxa de entrega:', err);
+            if (err.name !== 'AbortError') {
+              console.error('Erro ao buscar taxa de entrega:', err);
+              setDeliveryError('Erro ao calcular taxa de entrega.');
+            }
           });
       }, 600); // Debounce de 600ms
 
@@ -156,6 +167,7 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
       };
     } else {
       setDeliveryFee(0);
+      setDeliveryError('');
     }
   }, [deliveryType, addressStreet, addressNumber, addressNeighborhood]);
 
@@ -898,6 +910,13 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
                           className="w-full bg-stone-900 border border-card-border text-stone-100 rounded-xl p-3 text-xs focus:outline-none"
                         />
                       </div>
+                      
+                      {deliveryError && (
+                        <div className="bg-red-950/30 border border-red-500/30 text-red-400 p-3 rounded-xl text-[10px] flex gap-2 items-start leading-normal">
+                          <AlertCircle size={14} className="flex-shrink-0 text-red-500 mt-0.5" />
+                          <span>{deliveryError}</span>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -965,8 +984,8 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
 
                   <button
                     type="submit"
-                    disabled={loading}
-                    className="w-full py-3.5 bg-primary hover:bg-primary-hover disabled:bg-stone-800 disabled:text-stone-600 text-white rounded-xl font-bold transition-all shadow-[0_4px_12px_rgba(239,68,68,0.3)] cursor-pointer text-sm uppercase flex items-center justify-center gap-2 mt-6"
+                    disabled={loading || (deliveryType === 'DELIVERY' && !!deliveryError)}
+                    className="w-full py-3.5 bg-primary hover:bg-primary-hover disabled:bg-stone-850 disabled:border-stone-800 disabled:text-stone-600 text-white rounded-xl font-bold transition-all shadow-[0_4px_12px_rgba(239,68,68,0.3)] cursor-pointer text-sm uppercase flex items-center justify-center gap-2 mt-6"
                   >
                     {loading ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

@@ -53,3 +53,37 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--primary);
 }
+
+/* 🖨️ Regras de Impressão (window.print) */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 12px;
+  }
+  
+  h1, h2, h3, h4, span, p, td, th, div {
+    color: black !important;
+  }
+  
+  /* Resetar fundos e sombras */
+  .bg-card-bg, .bg-stone-950, .bg-stone-900, .bg-stone-900\/60, .bg-stone-950\/20, .bg-amber-950\/20 {
+    background: transparent !important;
+    border-color: #e5e7eb !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+  
+  /* Bordas mais claras */
+  .border, .border-b, .border-t, .border-r, .border-l {
+    border-color: #e5e7eb !important;
+  }
+
+  /* Forçar a exibição em tela cheia do conteúdo principal no print */
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}
+

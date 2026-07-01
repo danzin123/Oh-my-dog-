@@ -52,6 +52,9 @@ export async function PUT(req: NextRequest) {
         deliveryFeePerKm:      body.deliveryFeePerKm     ?? undefined,
         deliveryMaxDistanceKm: body.deliveryMaxDistanceKm ?? undefined,
         estimatedDeliveryTime: body.estimatedDeliveryTime ?? undefined,
+        whatsappApiUrl:        body.whatsappApiUrl        ?? undefined,
+        whatsappApiToken:       body.whatsappApiToken       ?? undefined,
+        whatsappInstance:       body.whatsappInstance       ?? undefined,
       },
       create: {
         id: 'singleton',
@@ -69,6 +72,9 @@ export async function PUT(req: NextRequest) {
         deliveryFeePerKm:      body.deliveryFeePerKm     ?? 1.50,
         deliveryMaxDistanceKm: body.deliveryMaxDistanceKm ?? 10.00,
         estimatedDeliveryTime: body.estimatedDeliveryTime ?? 40,
+        whatsappApiUrl:        body.whatsappApiUrl        ?? '',
+        whatsappApiToken:       body.whatsappApiToken       ?? '',
+        whatsappInstance:       body.whatsappInstance       ?? '',
       },
     });
 

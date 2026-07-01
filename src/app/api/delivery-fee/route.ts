@@ -12,13 +12,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ fee: 0 });
     }
 
-    const { fee, distanceKm, source } = await getDeliveryFee(street, number, neighborhoodName);
+    const { fee, distanceKm, source, maxDistanceExceeded, maxDistanceKm } = await getDeliveryFee(street, number, neighborhoodName);
     console.log(`[Preview Fee API] Calc para "${street}, ${number} - ${neighborhoodName}": R$ ${fee} (${distanceKm ? distanceKm.toFixed(2) + 'km' : 'N/A'} via ${source})`);
     
-    return NextResponse.json({ fee });
+    return NextResponse.json({ 
+      fee,
+      distanceKm,
+      maxDistanceExceeded,
+      maxDistanceKm
+    });
 
   } catch (error) {
     console.error('[Preview Fee API Error]', error);
-    return NextResponse.json({ fee: 8.00 });
+    return NextResponse.json({ fee: 8.00, maxDistanceExceeded: false });
   }
 }

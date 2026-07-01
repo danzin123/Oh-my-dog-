@@ -1,8 +1,16 @@
+import { prisma } from '@/lib/db';
+
 export async function sendWhatsAppMessage(phone: string, text: string): Promise<boolean> {
   try {
-    const apiUrl = process.env.WHATSAPP_API_URL;
-    const apiToken = process.env.WHATSAPP_API_TOKEN;
-    const instanceName = process.env.WHATSAPP_INSTANCE;
+    // Buscar configurações do WhatsApp do banco de dados (singleton)
+    const settings = await prisma.storeSettings.findUnique({
+      where: { id: 'singleton' }
+    });
+
+    const apiUrl = settings?.whatsappApiUrl || process.env.WHATSAPP_API_URL;
+    const apiToken = settings?.whatsappApiToken || process.env.WHATSAPP_API_TOKEN;
+    const instanceName = settings?.whatsappInstance || process.env.WHATSAPP_INSTANCE;
+
 
     // Limpar o número do telefone (manter apenas números)
     let cleanPhone = phone.replace(/\D/g, '');

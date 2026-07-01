@@ -27,7 +27,9 @@ import {
   ToggleLeft,
   ToggleRight,
   Clock,
-  Store
+  Store,
+  MessageSquare,
+  Calendar
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -101,6 +103,9 @@ interface StoreSettings {
   deliveryFeePerKm: string;
   deliveryMaxDistanceKm: string;
   estimatedDeliveryTime: number;
+  whatsappApiUrl: string;
+  whatsappApiToken: string;
+  whatsappInstance: string;
 }
 
 const DAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -160,6 +165,7 @@ export default function AdminPage() {
   // Dashboard & Orders state
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState<'TODAY' | 'YESTERDAY' | 'LAST_7' | 'MONTH' | 'ALL'>('TODAY');
 
   // Neighborhoods state
   const [neighborhoods, setNeighborhoods] = useState<Array<{ id: string; name: string; deliveryFee: string; active: boolean }>>([]);
@@ -189,6 +195,9 @@ export default function AdminPage() {
     deliveryFeePerKm: '1.50',
     deliveryMaxDistanceKm: '10.00',
     estimatedDeliveryTime: 40,
+    whatsappApiUrl: '',
+    whatsappApiToken: '',
+    whatsappInstance: '',
   };
   const [storeSettings, setStoreSettings] = useState<StoreSettings>(defaultSettings);
   const [settingsSaving, setSettingsSaving] = useState(false);
@@ -306,10 +315,10 @@ export default function AdminPage() {
     setDashboardData(null);
   };
 
-  const fetchDashboardData = async (silent = false) => {
+  const fetchDashboardData = async (silent = false, period = selectedPeriod) => {
     if (!silent) setRefreshing(true);
     try {
-      const res = await fetch('/api/admin/dashboard');
+      const res = await fetch(`/api/admin/dashboard?period=${period}`);
       if (res.ok) {
         const data = await res.json();
         setDashboardData(data);
@@ -322,6 +331,11 @@ export default function AdminPage() {
     } finally {
       if (!silent) setRefreshing(false);
     }
+  };
+
+  const handlePeriodChange = (period: 'TODAY' | 'YESTERDAY' | 'LAST_7' | 'MONTH' | 'ALL') => {
+    setSelectedPeriod(period);
+    fetchDashboardData(false, period);
   };
 
   const fetchProducts = async () => {
@@ -346,6 +360,9 @@ export default function AdminPage() {
           deliveryBaseFee: data.settings.deliveryBaseFee?.toString() ?? '5.00',
           deliveryFeePerKm: data.settings.deliveryFeePerKm?.toString() ?? '1.50',
           deliveryMaxDistanceKm: data.settings.deliveryMaxDistanceKm?.toString() ?? '10.00',
+          whatsappApiUrl: data.settings.whatsappApiUrl ?? '',
+          whatsappApiToken: data.settings.whatsappApiToken ?? '',
+          whatsappInstance: data.settings.whatsappInstance ?? '',
         });
       }
     } catch (err) {
@@ -401,7 +418,7 @@ export default function AdminPage() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [isAuthenticated, activeTab]);
+  }, [isAuthenticated, activeTab, selectedPeriod]);
 
   // Detectar novos pedidos e tocar som
   useEffect(() => {
@@ -653,7 +670,7 @@ export default function AdminPage() {
     <div className="min-h-screen bg-background text-foreground flex flex-col md:flex-row">
       
       {/* Sidebar */}
-      <aside className="w-full md:w-64 bg-card-bg border-b md:border-b-0 md:border-r border-card-border flex flex-col justify-between flex-shrink-0">
+      <aside className="w-full md:w-64 bg-card-bg border-b md:border-b-0 md:border-r border-card-border flex flex-col justify-between flex-shrink-0 print:hidden">
         <div>
           {/* Brand */}
           <div className="p-5 border-b border-card-border flex items-center justify-between">
@@ -761,7 +778,7 @@ export default function AdminPage() {
 
       {/* Main Content Area */}
       <div className="flex-grow flex flex-col overflow-y-auto">
-        <header className="hidden md:flex bg-card-bg/50 border-b border-card-border py-4 px-6 justify-between items-center">
+        <header className="hidden md:flex bg-card-bg/50 border-b border-card-border py-4 px-6 justify-between items-center print:hidden">
           <h2 className="text-sm font-bold text-muted uppercase tracking-wider">
             {activeTab === 'DASHBOARD' && 'Visão Geral Financeira'}
             {activeTab === 'KITCHEN' && 'Pedidos da Chapa'}
@@ -802,6 +819,43 @@ export default function AdminPage() {
           {/* TAB 1: DASHBOARD */}
           {activeTab === 'DASHBOARD' && dashboardData && (
             <div className="space-y-6 animate-fadeIn">
+              
+              {/* Filtro de Período e Botão Imprimir */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center bg-card-bg border border-card-border p-4 rounded-2xl shadow-lg print:hidden">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Calendar size={16} className="text-primary" />
+                  <span className="text-xs font-bold text-stone-300">Período:</span>
+                  <div className="flex flex-wrap gap-1 bg-stone-950 p-1 rounded-xl border border-card-border">
+                    {[
+                      { id: 'TODAY', label: 'Hoje' },
+                      { id: 'YESTERDAY', label: 'Ontem' },
+                      { id: 'LAST_7', label: '7 Dias' },
+                      { id: 'MONTH', label: 'Este Mês' },
+                      { id: 'ALL', label: 'Tudo' }
+                    ].map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => handlePeriodChange(p.id as any)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          selectedPeriod === p.id
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'text-stone-400 hover:text-stone-200'
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => window.print()}
+                  className="w-full sm:w-auto px-4 py-2 bg-stone-900 border border-card-border hover:border-stone-600 text-stone-200 hover:text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  Imprimir Fechamento 🖨️
+                </button>
+              </div>
+
               {/* Cards Metrics */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 <div className="bg-card-bg border border-card-border rounded-xl p-5 shadow-lg flex items-center justify-between">
@@ -847,7 +901,7 @@ export default function AdminPage() {
               </div>
 
               {/* Chart */}
-              <div className="bg-card-bg border border-card-border rounded-2xl p-5 shadow-lg">
+              <div className="bg-card-bg border border-card-border rounded-2xl p-5 shadow-lg print:hidden">
                 <h3 className="font-extrabold text-base text-white mb-4">Vendas nos Últimos 15 Dias</h3>
                 <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1672,6 +1726,45 @@ export default function AdminPage() {
                     />
                   </div>
                 ))}
+              </div>
+
+              {/* Integração WhatsApp */}
+              <div className="bg-card-bg border border-card-border rounded-2xl p-6 space-y-4">
+                <h4 className="font-black text-sm text-white uppercase tracking-wider flex items-center gap-2">
+                  <MessageSquare size={16} className="text-primary" /> API do WhatsApp
+                </h4>
+                <p className="text-xs text-stone-500">Configurações para notificações de preparo e entrega automáticas para o cliente.</p>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-stone-400">URL da API do WhatsApp</label>
+                  <input
+                    type="text"
+                    placeholder="https://api.evolution.com"
+                    value={storeSettings.whatsappApiUrl || ''}
+                    onChange={e => setStoreSettings(prev => ({ ...prev, whatsappApiUrl: e.target.value }))}
+                    className="w-full bg-stone-950 border border-card-border text-stone-100 rounded-xl p-3 text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-stone-400">Token da API (apikey)</label>
+                  <input
+                    type="password"
+                    placeholder="Ex: evolution-token-key-abc"
+                    value={storeSettings.whatsappApiToken || ''}
+                    onChange={e => setStoreSettings(prev => ({ ...prev, whatsappApiToken: e.target.value }))}
+                    className="w-full bg-stone-950 border border-card-border text-stone-100 rounded-xl p-3 text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-stone-400">Nome da Instância</label>
+                  <input
+                    type="text"
+                    placeholder="Ex: OhMyDog"
+                    value={storeSettings.whatsappInstance || ''}
+                    onChange={e => setStoreSettings(prev => ({ ...prev, whatsappInstance: e.target.value }))}
+                    className="w-full bg-stone-950 border border-card-border text-stone-100 rounded-xl p-3 text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
               </div>
 
               {/* Save button bottom */}
