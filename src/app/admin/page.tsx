@@ -71,9 +71,19 @@ interface DashboardData {
     totalRevenue: number;
     totalOrders: number;
     ticketMedio: number;
+    todayMotoboyRevenue: number;
+    todayMotoboyCount: number;
   };
   chartData: Array<{ date: string; faturamento: number; pedidos: number }>;
   recentOrders: Order[];
+  todayMotoboyDeliveries?: Array<{
+    id: string;
+    clientName: string;
+    neighborhoodName: string;
+    deliveryFee: string;
+    createdAt: string;
+    orderStatus: string;
+  }>;
 }
 
 interface StoreSettings {
@@ -793,11 +803,11 @@ export default function AdminPage() {
           {activeTab === 'DASHBOARD' && dashboardData && (
             <div className="space-y-6 animate-fadeIn">
               {/* Cards Metrics */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 <div className="bg-card-bg border border-card-border rounded-xl p-5 shadow-lg flex items-center justify-between">
                   <div className="space-y-1">
                     <span className="text-xs text-muted font-semibold uppercase tracking-wider">Faturamento Total</span>
-                    <h3 className="text-2xl font-black text-white">R$ {dashboardData.metrics.totalRevenue.toFixed(2)}</h3>
+                    <h3 className="text-2xl font-black text-white">R$ {dashboardData.metrics.totalRevenue.toFixed(2).replace('.', ',')}</h3>
                   </div>
                   <div className="p-3 bg-primary/10 text-primary rounded-xl border border-primary/20">
                     <DollarSign size={24} />
@@ -817,10 +827,21 @@ export default function AdminPage() {
                 <div className="bg-card-bg border border-card-border rounded-xl p-5 shadow-lg flex items-center justify-between">
                   <div className="space-y-1">
                     <span className="text-xs text-muted font-semibold uppercase tracking-wider">Ticket Médio</span>
-                    <h3 className="text-2xl font-black text-white">R$ {dashboardData.metrics.ticketMedio.toFixed(2)}</h3>
+                    <h3 className="text-2xl font-black text-white">R$ {dashboardData.metrics.ticketMedio.toFixed(2).replace('.', ',')}</h3>
                   </div>
                   <div className="p-3 bg-success/10 text-success rounded-xl border border-success/20">
                     <TrendingUp size={24} />
+                  </div>
+                </div>
+
+                <div className="bg-card-bg border border-card-border rounded-xl p-5 shadow-lg flex items-center justify-between">
+                  <div className="space-y-1">
+                    <span className="text-xs text-muted font-semibold uppercase tracking-wider">Taxa Motoboy (Hoje)</span>
+                    <h3 className="text-2xl font-black text-amber-400">R$ {(dashboardData.metrics.todayMotoboyRevenue || 0).toFixed(2).replace('.', ',')}</h3>
+                    <p className="text-[9px] text-stone-500 font-semibold mt-0.5">{dashboardData.metrics.todayMotoboyCount || 0} entregas finalizadas</p>
+                  </div>
+                  <div className="p-3 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20">
+                    <Truck size={24} />
                   </div>
                 </div>
               </div>
@@ -910,7 +931,68 @@ export default function AdminPage() {
                       ))}
                     </tbody>
                   </table>
+              </div>
+
+              {/* Detalhamento de Taxas do Motoboy (Hoje) */}
+              <div className="bg-card-bg border border-card-border rounded-2xl p-5 shadow-lg space-y-4">
+                <div className="flex justify-between items-center border-b border-card-border pb-3">
+                  <div className="flex items-center gap-2">
+                    <Truck size={18} className="text-amber-400" />
+                    <h3 className="font-extrabold text-base text-white">Taxas de Entrega do Dia (Motoboy)</h3>
+                  </div>
+                  <span className="bg-amber-500/10 text-amber-400 border border-amber-500/20 font-black text-xs px-3.5 py-1.5 rounded-xl">
+                    Total a pagar: R$ {(dashboardData.metrics.todayMotoboyRevenue || 0).toFixed(2).replace('.', ',')}
+                  </span>
                 </div>
+
+                {dashboardData.todayMotoboyDeliveries && dashboardData.todayMotoboyDeliveries.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-card-border text-muted pb-3">
+                          <th className="py-3 font-bold uppercase">Pedido</th>
+                          <th className="py-3 font-bold uppercase">Cliente</th>
+                          <th className="py-3 font-bold uppercase">Bairro</th>
+                          <th className="py-3 font-bold uppercase">Horário</th>
+                          <th className="py-3 font-bold uppercase text-right">Taxa Motoboy</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-card-border/30 text-stone-200">
+                        {dashboardData.todayMotoboyDeliveries.map((delivery) => (
+                          <tr key={delivery.id} className="hover:bg-stone-900/20 transition-colors">
+                            <td className="py-3.5 font-mono font-bold text-stone-400">
+                              #{delivery.id.slice(-6).toUpperCase()}
+                            </td>
+                            <td className="py-3.5 font-semibold text-white">{delivery.clientName}</td>
+                            <td className="py-3.5 text-stone-400">{delivery.neighborhoodName}</td>
+                            <td className="py-3.5 text-stone-500">
+                              {new Date(delivery.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                            </td>
+                            <td className="py-3.5 text-right font-black text-amber-400">
+                              R$ {parseFloat(delivery.deliveryFee).toFixed(2).replace('.', ',')}
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="bg-stone-950 font-black text-sm text-white">
+                          <td colSpan={4} className="py-4 px-3 text-left uppercase tracking-wider">
+                            Total Acumulado a Pagar
+                          </td>
+                          <td className="py-4 px-3 text-right text-base text-amber-400">
+                            R$ {(dashboardData.metrics.todayMotoboyRevenue || 0).toFixed(2).replace('.', ',')}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-10 text-center border border-dashed border-card-border/40 rounded-xl bg-stone-900/10">
+                    <Truck className="text-stone-750 mb-3" size={32} />
+                    <h4 className="font-extrabold text-stone-400 text-xs uppercase tracking-wider">Nenhuma entrega paga hoje</h4>
+                    <p className="text-[10px] text-stone-500 mt-1 max-w-[250px]">
+                      Nenhum pedido de entrega foi concluído e pago hoje até o momento.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}

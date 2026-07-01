@@ -35,6 +35,26 @@ export async function GET(req: NextRequest) {
       }
     });
 
+    // 3.1. Calcular taxa de entrega acumulada para motoboy hoje (Fuso SP)
+    const todaySPString = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    const startOfYesterday = new Date();
+    startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+
+    const candidateOrders = await prisma.order.findMany({
+      where: {
+        createdAt: { gte: startOfYesterday }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const motoboyOrdersToday = candidateOrders.filter(o => {
+      const orderDateStr = new Date(o.createdAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+      return o.deliveryType === 'DELIVERY' && o.paymentStatus === 'PAID' && orderDateStr === todaySPString;
+    });
+
+    const todayMotoboyRevenue = motoboyOrdersToday.reduce((sum, o) => sum + parseFloat(o.deliveryFee.toString()), 0);
+    const todayMotoboyCount = motoboyOrdersToday.length;
+
     // 4. Faturamento dos últimos 15 dias (para o gráfico) - filtramos apenas os últimos 15 dias para otimização
     const fifteenDaysAgo = new Date();
     fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
@@ -84,9 +104,19 @@ export async function GET(req: NextRequest) {
       metrics: {
         totalRevenue: parseFloat(totalRevenue.toFixed(2)),
         totalOrders,
-        ticketMedio: parseFloat(ticketMedio.toFixed(2))
+        ticketMedio: parseFloat(ticketMedio.toFixed(2)),
+        todayMotoboyRevenue: parseFloat(todayMotoboyRevenue.toFixed(2)),
+        todayMotoboyCount
       },
       chartData,
+      todayMotoboyDeliveries: motoboyOrdersToday.map(o => ({
+        id: o.id,
+        clientName: o.clientName,
+        neighborhoodName: o.neighborhoodName || 'Não informado',
+        deliveryFee: o.deliveryFee.toString(),
+        createdAt: o.createdAt,
+        orderStatus: o.orderStatus
+      })),
       recentOrders: recentOrders.map(o => ({
         id: o.id,
         clientName: o.clientName,
