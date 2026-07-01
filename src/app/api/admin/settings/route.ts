@@ -4,7 +4,7 @@ import { cookies } from 'next/headers';
 
 async function isAuthenticated() {
   const cookieStore = await cookies();
-  return cookieStore.get('admin_session')?.value === 'authenticated';
+  return cookieStore.get('admin_token')?.value === 'oh-my-dog-session-approved';
 }
 
 // GET — buscar configurações atuais
