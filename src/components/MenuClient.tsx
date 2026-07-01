@@ -97,6 +97,18 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
     closeTime: string;
   }>({ open: true, nextOpen: '', openTime: '17:30', closeTime: '23:00' });
 
+  const [storeInfo, setStoreInfo] = useState<{
+    name: string;
+    phone: string;
+    address: string;
+    instagram: string;
+  }>({
+    name: 'Oh my Dog!',
+    phone: '',
+    address: '',
+    instagram: ''
+  });
+
   useEffect(() => {
     const fetchAndCheck = async () => {
       try {
@@ -104,6 +116,12 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
         if (res.ok) {
           const data = await res.json();
           setStoreStatus(checkStoreOpen(data.settings));
+          setStoreInfo({
+            name: data.settings.storeName || 'Oh my Dog!',
+            phone: data.settings.storePhone || '',
+            address: data.settings.storeAddress || '',
+            instagram: data.settings.storeInstagram || ''
+          });
         }
       } catch {
         // Fallback: considera aberto se a API falhar
@@ -593,6 +611,62 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
           })}
         </div>
       </main>
+
+      {/* Rodapé institucional com dados da loja */}
+      <footer className="max-w-5xl mx-auto px-4 mt-8 pb-12 border-t border-card-border/60 pt-8 text-center space-y-6">
+        <div className="flex flex-col items-center space-y-2">
+          {/* Logo compacta */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src="/logo.jpg" 
+            alt="Logo Oh my Dog!" 
+            className="w-12 h-12 object-contain rounded-xl border border-white/10"
+          />
+          <h3 className="font-extrabold text-white text-sm">{storeInfo.name}</h3>
+          <p className="text-[10px] text-stone-500 uppercase tracking-widest">Os melhores hotdogs da região</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl mx-auto text-xs text-stone-400">
+          {storeInfo.address && (
+            <div className="space-y-1">
+              <p className="font-bold text-stone-300 uppercase tracking-wider text-[10px]">Endereço</p>
+              <p className="leading-relaxed">{storeInfo.address}</p>
+            </div>
+          )}
+          
+          {storeInfo.phone && (
+            <div className="space-y-1">
+              <p className="font-bold text-stone-300 uppercase tracking-wider text-[10px]">Contato</p>
+              <a 
+                href={`https://wa.me/55${storeInfo.phone.replace(/\D/g, '')}`} 
+                target="_blank" 
+                rel="noreferrer" 
+                className="hover:text-primary transition-colors block"
+              >
+                {storeInfo.phone}
+              </a>
+            </div>
+          )}
+
+          {storeInfo.instagram && (
+            <div className="space-y-1">
+              <p className="font-bold text-stone-300 uppercase tracking-wider text-[10px]">Instagram</p>
+              <a 
+                href={`https://instagram.com/${storeInfo.instagram.replace('@', '')}`} 
+                target="_blank" 
+                rel="noreferrer" 
+                className="hover:text-primary transition-colors block"
+              >
+                {storeInfo.instagram.startsWith('@') ? storeInfo.instagram : `@${storeInfo.instagram}`}
+              </a>
+            </div>
+          )}
+        </div>
+
+        <div className="text-[10px] text-stone-600 pt-6 border-t border-card-border/30">
+          <p>© {new Date().getFullYear()} {storeInfo.name}. Todos os direitos reservados.</p>
+        </div>
+      </footer>
 
       {/* Carrinho de Compras (Drawer lateral) */}
       {isCartOpen && (
