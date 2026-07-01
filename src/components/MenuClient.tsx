@@ -499,31 +499,7 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
         </div>
       </header>
 
-      {/* Banner / Hero */}
-      <section className="max-w-5xl mx-auto px-4 mt-6">
-        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-red-950/60 via-stone-950 to-amber-950/30 p-8 border border-red-900/30 flex flex-col md:flex-row justify-between items-center gap-6">
-          {/* Glows */}
-          <div className="absolute top-0 left-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="absolute bottom-0 right-10 w-40 h-40 bg-amber-600/10 rounded-full blur-3xl pointer-events-none"></div>
-          
-          <div className="z-10 text-center md:text-left">
-            <span className="inline-flex items-center gap-1.5 bg-primary/15 text-primary border border-primary/25 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest">
-              🔥 Promoção Especial
-            </span>
-            <h2 className="text-3xl md:text-5xl font-black text-white mt-4 tracking-tight leading-tight">
-              Sabor Gigante,{' '}
-              <span className="text-primary drop-shadow-[0_0_12px_rgba(239,68,68,0.5)]">preço</span>{' '}
-              <br className="hidden md:block" />que cabe no bolso.
-            </h2>
-            <p className="text-stone-400 mt-3 text-sm md:text-base max-w-md leading-relaxed">
-              Queijo derretido, salsicha artesanal e pão de brioche assado na hora.
-            </p>
-          </div>
-          <div className="relative flex items-center justify-center text-8xl md:text-[7rem] drop-shadow-[0_10px_30px_rgba(0,0,0,0.6)] select-none" style={{animation: 'bounce 2s infinite'}}>
-            🌭
-          </div>
-        </div>
-      </section>
+
 
       {/* Categorias */}
       <section className="max-w-5xl mx-auto px-4 mt-8">
