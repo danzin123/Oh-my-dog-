@@ -24,6 +24,11 @@ export const metadata: Metadata = {
   description:
     "Os melhores hotdogs de Bragança Paulista. Queijo derretido, salsicha artesanal e pão de brioche. Peça agora e receba em casa!",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/logo.jpg",
+    shortcut: "/logo.jpg",
+    apple: "/logo.jpg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

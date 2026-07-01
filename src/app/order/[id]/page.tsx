@@ -171,6 +171,20 @@ export default function OrderTrackingPage() {
       {/* Main Container */}
       <main className="flex-1 max-w-md w-full mx-auto p-4 space-y-6 pb-20">
         
+        {/* Brand Header */}
+        <div className="flex flex-col items-center justify-center text-center py-2 space-y-2.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img 
+            src="/logo.jpg" 
+            alt="Logo Oh my Dog!" 
+            className="w-16 h-16 object-contain rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.5)] border border-white/10"
+          />
+          <div>
+            <h1 className="font-extrabold text-lg text-white leading-none">Oh my Dog!</h1>
+            <p className="text-[10px] text-stone-500 font-bold uppercase tracking-widest mt-1.5">Os melhores hotdogs da região</p>
+          </div>
+        </div>
+
         {/* Status Stepper Card */}
         <div className="bg-card-bg border border-card-border rounded-2xl p-5 shadow-xl space-y-6">
           <div className="border-b border-card-border/60 pb-3 flex justify-between items-center">

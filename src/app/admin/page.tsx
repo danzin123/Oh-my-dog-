@@ -674,8 +674,13 @@ export default function AdminPage() {
         <div>
           {/* Brand */}
           <div className="p-5 border-b border-card-border flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🌭</span>
+            <div className="flex items-center gap-2.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src="/logo.jpg" 
+                alt="Logo Oh my Dog!" 
+                className="w-8 h-8 object-contain rounded-lg border border-white/15"
+              />
               <div>
                 <h1 className="font-extrabold text-base text-white tracking-tight leading-none">Oh my Dog!</h1>
                 <span className="text-[10px] text-primary font-bold tracking-wider uppercase">Painel de Controle</span>
