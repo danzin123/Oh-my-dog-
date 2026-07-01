@@ -21,7 +21,13 @@ import {
   AlertCircle,
   Truck,
   MapPin,
-  X
+  X,
+  Settings,
+  Save,
+  ToggleLeft,
+  ToggleRight,
+  Clock,
+  Store
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -70,11 +76,30 @@ interface DashboardData {
   recentOrders: Order[];
 }
 
+interface StoreSettings {
+  storeName: string;
+  storePhone: string;
+  storeAddress: string;
+  storeInstagram: string;
+  isForceClose: boolean;
+  openTime: string;
+  closeTime: string;
+  openDays: string; // "0,2,3,4,5,6"
+  deliveryEnabled: boolean;
+  withdrawalEnabled: boolean;
+  deliveryBaseFee: string;
+  deliveryFeePerKm: string;
+  deliveryMaxDistanceKm: string;
+  estimatedDeliveryTime: number;
+}
+
+const DAY_LABELS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
-  const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'KITCHEN' | 'PRODUCTS' | 'NEIGHBORHOODS'>('DASHBOARD');
+  const [activeTab, setActiveTab] = useState<'DASHBOARD' | 'KITCHEN' | 'PRODUCTS' | 'NEIGHBORHOODS' | 'SETTINGS'>('DASHBOARD');
   
   // Kitchen Live Ticking Timers
   const [currentTime, setCurrentTime] = useState<number>(0);
@@ -137,6 +162,28 @@ export default function AdminPage() {
     active: true
   });
   const [neighborhoodError, setNeighborhoodError] = useState('');
+
+  // ─── Store Settings State ────────────────────────────────────────────────────
+  const defaultSettings: StoreSettings = {
+    storeName: 'Oh my Dog!',
+    storePhone: '',
+    storeAddress: '',
+    storeInstagram: '',
+    isForceClose: false,
+    openTime: '17:30',
+    closeTime: '23:00',
+    openDays: '0,2,3,4,5,6',
+    deliveryEnabled: true,
+    withdrawalEnabled: true,
+    deliveryBaseFee: '5.00',
+    deliveryFeePerKm: '1.50',
+    deliveryMaxDistanceKm: '10.00',
+    estimatedDeliveryTime: 40,
+  };
+  const [storeSettings, setStoreSettings] = useState<StoreSettings>(defaultSettings);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+  const [settingsError, setSettingsError] = useState('');
 
   const fetchNeighborhoods = async () => {
     try {
@@ -233,6 +280,7 @@ export default function AdminPage() {
         fetchDashboardData();
         fetchProducts();
         fetchNeighborhoods();
+        fetchStoreSettings();
       } else {
         const data = await res.json();
         setLoginError(data.message || 'Senha inválida');
@@ -278,13 +326,64 @@ export default function AdminPage() {
     }
   };
 
+  const fetchStoreSettings = async () => {
+    try {
+      const res = await fetch('/api/admin/settings');
+      if (res.ok) {
+        const data = await res.json();
+        setStoreSettings({
+          ...data.settings,
+          deliveryBaseFee: data.settings.deliveryBaseFee?.toString() ?? '5.00',
+          deliveryFeePerKm: data.settings.deliveryFeePerKm?.toString() ?? '1.50',
+          deliveryMaxDistanceKm: data.settings.deliveryMaxDistanceKm?.toString() ?? '10.00',
+        });
+      }
+    } catch (err) {
+      console.error('Erro ao buscar configurações:', err);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    setSettingsSaving(true);
+    setSettingsError('');
+    setSettingsSaved(false);
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(storeSettings),
+      });
+      if (res.ok) {
+        setSettingsSaved(true);
+        setTimeout(() => setSettingsSaved(false), 3000);
+      } else {
+        setSettingsError('Erro ao salvar configurações.');
+      }
+    } catch {
+      setSettingsError('Falha na conexão.');
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
+  const toggleDay = (day: number) => {
+    const current = storeSettings.openDays.split(',').filter(Boolean).map(Number);
+    const next = current.includes(day)
+      ? current.filter(d => d !== day)
+      : [...current, day].sort();
+    setStoreSettings(prev => ({ ...prev, openDays: next.join(',') }));
+  };
+
   // Poll for new orders every 5 seconds for kitchen view
   useEffect(() => {
     if (!isAuthenticated) return;
 
     if (activeTab === 'KITCHEN') {
-      fetchProducts(); // Refresh catalog state too
-      setHasNewOrder(false); // Limpar badge ao entrar na cozinha
+      fetchProducts();
+      setHasNewOrder(false);
+    }
+    if (activeTab === 'SETTINGS') {
+      fetchStoreSettings();
     }
 
     const interval = setInterval(() => {
@@ -578,7 +677,7 @@ export default function AdminPage() {
             </button>
 
             <button
-              onClick={() => setActiveTab('KITCHEN')}
+              onClick={() => { setActiveTab('KITCHEN'); setHasNewOrder(false); }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 cursor-pointer relative ${
                 activeTab === 'KITCHEN'
                   ? 'bg-primary text-white shadow-md'
@@ -623,6 +722,18 @@ export default function AdminPage() {
               <Truck size={18} />
               <span>Taxas de Entrega</span>
             </button>
+
+            <button
+              onClick={() => setActiveTab('SETTINGS')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 cursor-pointer ${
+                activeTab === 'SETTINGS'
+                  ? 'bg-primary text-white shadow-md'
+                  : 'text-stone-300 hover:bg-stone-850'
+              }`}
+            >
+              <Settings size={18} />
+              <span>Configurações</span>
+            </button>
           </nav>
         </div>
 
@@ -646,10 +757,33 @@ export default function AdminPage() {
             {activeTab === 'KITCHEN' && 'Pedidos da Chapa'}
             {activeTab === 'PRODUCTS' && 'Gerenciamento do Cardápio'}
             {activeTab === 'NEIGHBORHOODS' && 'Taxas de Entrega por Bairro'}
+            {activeTab === 'SETTINGS' && 'Configurações da Loja'}
           </h2>
-          <div className="flex items-center gap-2 text-xs font-semibold text-muted">
-            <div className="w-2 h-2 rounded-full bg-success animate-ping"></div>
-            <span>Conectado à nuvem</span>
+          <div className="flex items-center gap-3">
+            {/* Toggle Rápido de Status da Loja */}
+            <button
+              onClick={() => {
+                const newVal = !storeSettings.isForceClose;
+                setStoreSettings(prev => ({ ...prev, isForceClose: newVal }));
+                fetch('/api/admin/settings', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ isForceClose: newVal }),
+                });
+              }}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                storeSettings.isForceClose
+                  ? 'bg-red-950/30 border-red-500/40 text-red-400 hover:bg-red-950/50'
+                  : 'bg-success/10 border-success/30 text-success hover:bg-success/20'
+              }`}
+            >
+              {storeSettings.isForceClose ? <ToggleLeft size={16} /> : <ToggleRight size={16} />}
+              <span>{storeSettings.isForceClose ? 'LOJA FECHADA' : 'LOJA ABERTA'}</span>
+            </button>
+            <div className="flex items-center gap-2 text-xs font-semibold text-muted">
+              <div className="w-2 h-2 rounded-full bg-success animate-ping"></div>
+              <span>Conectado à nuvem</span>
+            </div>
           </div>
         </header>
 
@@ -784,6 +918,63 @@ export default function AdminPage() {
           {/* TAB 2: KITCHEN VIEW */}
           {activeTab === 'KITCHEN' && dashboardData && (
             <div className="space-y-6 animate-fadeIn">
+
+              {/* 🏕️ Painel Motoboy */}
+              {dashboardData.recentOrders.some(o => o.deliveryType === 'DELIVERY' && (o.orderStatus === 'RECEIVED' || o.orderStatus === 'PREPARING' || o.orderStatus === 'READY' || o.orderStatus === 'DISPATCHED')) && (
+                <div className="bg-amber-950/20 border border-amber-500/20 rounded-2xl p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Truck size={18} className="text-amber-400" />
+                    <h3 className="font-black text-sm text-amber-300 uppercase tracking-wider">Entregas para Motoboy</h3>
+                    <span className="bg-amber-500/20 text-amber-300 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-500/30">
+                      {dashboardData.recentOrders.filter(o => o.deliveryType === 'DELIVERY' && o.orderStatus !== 'DELIVERED').length} ativas
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                    {dashboardData.recentOrders
+                      .filter(o => o.deliveryType === 'DELIVERY' && o.orderStatus !== 'DELIVERED')
+                      .map(order => (
+                        <div key={order.id} className="bg-card-bg border border-amber-500/20 rounded-xl p-4 space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-black text-sm text-white">{order.clientName}</p>
+                              <p className="text-[10px] text-stone-500 font-mono">#{order.id.slice(-6).toUpperCase()}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[10px] text-stone-500 uppercase tracking-wide">Taxa Motoboy</p>
+                              <p className="text-xl font-black text-amber-400">R$ {parseFloat(order.deliveryFee).toFixed(2).replace('.', ',')}</p>
+                            </div>
+                          </div>
+                          <div className="bg-stone-950/60 rounded-lg p-2.5 text-[11px] text-stone-300 space-y-1">
+                            <p className="font-bold">{order.addressStreet}, {order.addressNumber}</p>
+                            <p className="text-stone-500">{order.neighborhoodName}</p>
+                            {order.addressReference && <p className="text-stone-600 italic text-[10px]">Ref: {order.addressReference}</p>}
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase border ${
+                              order.orderStatus === 'RECEIVED' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
+                              order.orderStatus === 'PREPARING' ? 'bg-orange-500/10 border-orange-500/20 text-orange-400' :
+                              order.orderStatus === 'READY' ? 'bg-green-500/10 border-green-500/20 text-green-400' :
+                              'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                            }`}>
+                              {order.orderStatus === 'RECEIVED' ? 'Aguardando' :
+                               order.orderStatus === 'PREPARING' ? 'Na chapa' :
+                               order.orderStatus === 'READY' ? 'Pronto p/ sair' : 'Em rota'}
+                            </span>
+                            <a
+                              href={`https://wa.me/55${order.clientPhone.replace(/\D/g, '')}?text=${encodeURIComponent(`Olá ${order.clientName}! Seu pedido #${order.id.slice(-6).toUpperCase()} está a caminho! 📦🌭`)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[10px] font-bold text-success border border-success/30 px-2.5 py-1 rounded-lg hover:bg-success/10 transition-all"
+                            >
+                              WhatsApp 💬
+                            </a>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 
                 {/* Col 1: Recebidos (Aguardando Preparo) */}
@@ -1195,6 +1386,223 @@ export default function AdminPage() {
                 </div>
 
               </div>
+            </div>
+          )}
+
+          {/* TAB 5: SETTINGS */}
+          {activeTab === 'SETTINGS' && (
+            <div className="max-w-3xl mx-auto space-y-8 animate-fadeIn">
+
+              {/* Save bar */}
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-black text-white">Configurações da Loja</h3>
+                <div className="flex items-center gap-3">
+                  {settingsSaved && (
+                    <span className="text-success text-xs font-bold flex items-center gap-1">
+                      <Check size={14} /> Salvo com sucesso!
+                    </span>
+                  )}
+                  {settingsError && <span className="text-red-400 text-xs font-bold">{settingsError}</span>}
+                  <button
+                    onClick={handleSaveSettings}
+                    disabled={settingsSaving}
+                    className="bg-primary hover:bg-primary-hover disabled:bg-stone-800 text-white px-5 py-2.5 rounded-xl text-xs font-extrabold flex items-center gap-2 cursor-pointer transition-all shadow-lg uppercase"
+                  >
+                    {settingsSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={14} />}
+                    Salvar Tudo
+                  </button>
+                </div>
+              </div>
+
+              {/* Status da Loja */}
+              <div className="bg-card-bg border border-card-border rounded-2xl p-6 space-y-4">
+                <h4 className="font-black text-sm text-white uppercase tracking-wider flex items-center gap-2">
+                  <Store size={16} className="text-primary" /> Status da Loja
+                </h4>
+
+                <div className="flex items-center justify-between bg-stone-950 border border-card-border rounded-xl p-4">
+                  <div>
+                    <p className="font-bold text-sm text-white">Fechar a loja agora</p>
+                    <p className="text-xs text-stone-500 mt-0.5">Bloqueia novos pedidos imediatamente, independente do horário</p>
+                  </div>
+                  <button
+                    onClick={() => setStoreSettings(prev => ({ ...prev, isForceClose: !prev.isForceClose }))}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-black transition-all cursor-pointer ${
+                      storeSettings.isForceClose
+                        ? 'bg-red-950/40 border-red-500/40 text-red-400'
+                        : 'bg-success/10 border-success/30 text-success'
+                    }`}
+                  >
+                    {storeSettings.isForceClose
+                      ? <><ToggleLeft size={20} /> FECHADO</>
+                      : <><ToggleRight size={20} /> ABERTO</>}
+                  </button>
+                </div>
+              </div>
+
+              {/* Horário de Funcionamento */}
+              <div className="bg-card-bg border border-card-border rounded-2xl p-6 space-y-5">
+                <h4 className="font-black text-sm text-white uppercase tracking-wider flex items-center gap-2">
+                  <Clock size={16} className="text-primary" /> Horário de Funcionamento
+                </h4>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-stone-400">Abertura</label>
+                    <input
+                      type="time"
+                      value={storeSettings.openTime}
+                      onChange={e => setStoreSettings(prev => ({ ...prev, openTime: e.target.value }))}
+                      className="w-full bg-stone-950 border border-card-border text-stone-100 rounded-xl p-3 text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-stone-400">Fechamento</label>
+                    <input
+                      type="time"
+                      value={storeSettings.closeTime}
+                      onChange={e => setStoreSettings(prev => ({ ...prev, closeTime: e.target.value }))}
+                      className="w-full bg-stone-950 border border-card-border text-stone-100 rounded-xl p-3 text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-stone-400">Dias abertos</label>
+                  <div className="flex flex-wrap gap-2">
+                    {DAY_LABELS.map((label, idx) => {
+                      const active = storeSettings.openDays.split(',').filter(Boolean).map(Number).includes(idx);
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => toggleDay(idx)}
+                          className={`px-4 py-2 rounded-xl text-xs font-black border transition-all cursor-pointer ${
+                            active
+                              ? 'bg-primary border-primary text-white shadow-[0_2px_8px_rgba(239,68,68,0.3)]'
+                              : 'bg-stone-950 border-card-border text-stone-500 hover:border-stone-600'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-stone-400">Tempo estimado de entrega (minutos)</label>
+                  <input
+                    type="number"
+                    min={5}
+                    max={120}
+                    value={storeSettings.estimatedDeliveryTime}
+                    onChange={e => setStoreSettings(prev => ({ ...prev, estimatedDeliveryTime: parseInt(e.target.value) || 40 }))}
+                    className="w-full bg-stone-950 border border-card-border text-stone-100 rounded-xl p-3 text-sm focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              {/* Entrega */}
+              <div className="bg-card-bg border border-card-border rounded-2xl p-6 space-y-5">
+                <h4 className="font-black text-sm text-white uppercase tracking-wider flex items-center gap-2">
+                  <Truck size={16} className="text-primary" /> Configurações de Entrega
+                </h4>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between bg-stone-950 border border-card-border rounded-xl p-4">
+                    <div>
+                      <p className="font-bold text-sm text-white">Delivery</p>
+                      <p className="text-[11px] text-stone-500">Entrega em casa</p>
+                    </div>
+                    <button
+                      onClick={() => setStoreSettings(prev => ({ ...prev, deliveryEnabled: !prev.deliveryEnabled }))}
+                      className={`text-xl transition-all cursor-pointer ${storeSettings.deliveryEnabled ? 'text-success' : 'text-stone-600'}`}
+                    >
+                      {storeSettings.deliveryEnabled ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between bg-stone-950 border border-card-border rounded-xl p-4">
+                    <div>
+                      <p className="font-bold text-sm text-white">Retirada</p>
+                      <p className="text-[11px] text-stone-500">Balcão</p>
+                    </div>
+                    <button
+                      onClick={() => setStoreSettings(prev => ({ ...prev, withdrawalEnabled: !prev.withdrawalEnabled }))}
+                      className={`text-xl transition-all cursor-pointer ${storeSettings.withdrawalEnabled ? 'text-success' : 'text-stone-600'}`}
+                    >
+                      {storeSettings.withdrawalEnabled ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-stone-400">Taxa base (R$)</label>
+                    <input
+                      type="number" step="0.50" min="0"
+                      value={storeSettings.deliveryBaseFee}
+                      onChange={e => setStoreSettings(prev => ({ ...prev, deliveryBaseFee: e.target.value }))}
+                      className="w-full bg-stone-950 border border-card-border text-stone-100 rounded-xl p-3 text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-stone-400">Valor por km (R$)</label>
+                    <input
+                      type="number" step="0.25" min="0"
+                      value={storeSettings.deliveryFeePerKm}
+                      onChange={e => setStoreSettings(prev => ({ ...prev, deliveryFeePerKm: e.target.value }))}
+                      className="w-full bg-stone-950 border border-card-border text-stone-100 rounded-xl p-3 text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-stone-400">Distância máx (km)</label>
+                    <input
+                      type="number" step="1" min="1"
+                      value={storeSettings.deliveryMaxDistanceKm}
+                      onChange={e => setStoreSettings(prev => ({ ...prev, deliveryMaxDistanceKm: e.target.value }))}
+                      className="w-full bg-stone-950 border border-card-border text-stone-100 rounded-xl p-3 text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Dados da Loja */}
+              <div className="bg-card-bg border border-card-border rounded-2xl p-6 space-y-4">
+                <h4 className="font-black text-sm text-white uppercase tracking-wider flex items-center gap-2">
+                  <MapPin size={16} className="text-primary" /> Dados da Loja
+                </h4>
+                {[
+                  { key: 'storeName', label: 'Nome da Loja', placeholder: 'Oh my Dog!' },
+                  { key: 'storePhone', label: 'WhatsApp / Telefone', placeholder: '(11) 99999-9999' },
+                  { key: 'storeAddress', label: 'Endereço Completo', placeholder: 'R. Exemplo, 123 - Bragança Paulista' },
+                  { key: 'storeInstagram', label: 'Instagram', placeholder: '@ohmydog' },
+                ].map(({ key, label, placeholder }) => (
+                  <div key={key} className="space-y-1.5">
+                    <label className="text-xs font-bold text-stone-400">{label}</label>
+                    <input
+                      type="text"
+                      placeholder={placeholder}
+                      value={(storeSettings as any)[key]}
+                      onChange={e => setStoreSettings(prev => ({ ...prev, [key]: e.target.value }))}
+                      className="w-full bg-stone-950 border border-card-border text-stone-100 rounded-xl p-3 text-sm focus:outline-none focus:border-primary"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Save button bottom */}
+              <div className="flex justify-end pb-8">
+                <button
+                  onClick={handleSaveSettings}
+                  disabled={settingsSaving}
+                  className="bg-primary hover:bg-primary-hover disabled:bg-stone-800 text-white px-8 py-3 rounded-xl text-sm font-extrabold flex items-center gap-2 cursor-pointer transition-all shadow-lg uppercase"
+                >
+                  {settingsSaving ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={16} />}
+                  Salvar Configurações
+                </button>
+              </div>
+
             </div>
           )}
 

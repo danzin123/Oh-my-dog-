@@ -89,3 +89,32 @@ model Neighborhood {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
+
+// Registro \u00fanico de configura\u00e7\u00f5es da loja (sempre id = 'singleton')
+model StoreSettings {
+  id String @id @default("singleton")
+
+  // Dados da loja
+  storeName      String @default("Oh my Dog!")
+  storePhone     String @default("")
+  storeAddress   String @default("")
+  storeInstagram String @default("")
+
+  // Controle de status
+  isForceClose Boolean @default(false) // Toggle para fechar imediatamente
+
+  // Hor\u00e1rio de funcionamento
+  openTime  String @default("17:30")
+  closeTime String @default("23:00")
+  openDays  String @default("0,2,3,4,5,6") // 0=Dom,1=Seg,...6=S\u00e1b separados por v\u00edrgula
+
+  // Entrega
+  deliveryEnabled       Boolean @default(true)
+  withdrawalEnabled     Boolean @default(true)
+  deliveryBaseFee       Decimal @default(5.00)
+  deliveryFeePerKm      Decimal @default(1.50)
+  deliveryMaxDistanceKm Decimal @default(10.00)
+  estimatedDeliveryTime Int     @default(40) // minutos
+
+  updatedAt DateTime @updatedAt
+}

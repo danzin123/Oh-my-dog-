@@ -5,48 +5,47 @@ import { ShoppingBag, Plus, Minus, X, Trash2, CheckCircle2, Ticket, QrCode, Cred
 import confetti from 'canvas-confetti';
 import { useRouter } from 'next/navigation';
 
-// ─── Horário de Funcionamento ───────────────────────────────────────────────
-// Formato: { days: [0=Dom,1=Seg,...6=Sab], open: 'HH:MM', close: 'HH:MM' }
-const BUSINESS_HOURS = {
-  days: [0, 2, 3, 4, 5, 6], // Dom, Ter, Qua, Qui, Sex, Sáb (fecha segunda)
-  open: '17:30',
-  close: '23:00',
-  closedDay: 'segunda-feira',
-};
+// ─── Helpers de Horário ──────────────────────────────────────────────────
+function checkStoreOpen(settings: {
+  isForceClose: boolean;
+  openTime: string;
+  closeTime: string;
+  openDays: string;
+}): { open: boolean; nextOpen: string; openTime: string; closeTime: string } {
+  if (settings.isForceClose) {
+    return { open: false, nextOpen: '', openTime: settings.openTime, closeTime: settings.closeTime };
+  }
 
-function isStoreOpen(): { open: boolean; nextOpen: string } {
+  const days = settings.openDays.split(',').filter(Boolean).map(Number);
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
   const day = now.getDay();
-  const [openH, openM] = BUSINESS_HOURS.open.split(':').map(Number);
-  const [closeH, closeM] = BUSINESS_HOURS.close.split(':').map(Number);
+  const [openH, openM] = settings.openTime.split(':').map(Number);
+  const [closeH, closeM] = settings.closeTime.split(':').map(Number);
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const openMin = openH * 60 + openM;
   const closeMin = closeH * 60 + closeM;
 
-  const isWorkingDay = BUSINESS_HOURS.days.includes(day);
-  const isWorkingHour = nowMin >= openMin && nowMin < closeMin;
-
-  if (isWorkingDay && isWorkingHour) {
-    return { open: true, nextOpen: '' };
+  if (days.includes(day) && nowMin >= openMin && nowMin < closeMin) {
+    return { open: true, nextOpen: '', openTime: settings.openTime, closeTime: settings.closeTime };
   }
 
-  // Calcula próxima abertura
   const dayNames = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
   let nextDay = (day + 1) % 7;
   let daysAhead = 1;
-  while (!BUSINESS_HOURS.days.includes(nextDay)) {
+  while (!days.includes(nextDay) && daysAhead < 8) {
     nextDay = (nextDay + 1) % 7;
     daysAhead++;
   }
-  const isToday = nowMin < openMin && isWorkingDay;
+  const isToday = nowMin < openMin && days.includes(day);
   const nextOpen = isToday
-    ? `hoje às ${BUSINESS_HOURS.open}`
+    ? `hoje às ${settings.openTime}`
     : daysAhead === 1
-    ? `amanhã (${dayNames[nextDay]}) às ${BUSINESS_HOURS.open}`
-    : `${dayNames[nextDay]} às ${BUSINESS_HOURS.open}`;
+    ? `amanhã (${dayNames[nextDay]}) às ${settings.openTime}`
+    : `${dayNames[nextDay]} às ${settings.openTime}`;
 
-  return { open: false, nextOpen };
+  return { open: false, nextOpen, openTime: settings.openTime, closeTime: settings.closeTime };
 }
+
 
 interface Product {
   id: string;
@@ -89,6 +88,32 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [couponError, setCouponError] = useState('');
   const [checkoutStep, setCheckoutStep] = useState<'DETAILS' | 'PAYMENT' | 'SUCCESS'>('DETAILS');
+
+  // ─── Store Status (busca da API) ──────────────────────────────────────────
+  const [storeStatus, setStoreStatus] = useState<{
+    open: boolean;
+    nextOpen: string;
+    openTime: string;
+    closeTime: string;
+  }>({ open: true, nextOpen: '', openTime: '17:30', closeTime: '23:00' });
+
+  useEffect(() => {
+    const fetchAndCheck = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          setStoreStatus(checkStoreOpen(data.settings));
+        }
+      } catch {
+        // Fallback: considera aberto se a API falhar
+        setStoreStatus({ open: true, nextOpen: '', openTime: '17:30', closeTime: '23:00' });
+      }
+    };
+    fetchAndCheck();
+    const interval = setInterval(fetchAndCheck, 60000); // Re-checa a cada 1 minuto
+    return () => clearInterval(interval);
+  }, []);
   
   // Delivery states
   const [deliveryType, setDeliveryType] = useState<'DELIVERY' | 'WITHDRAWAL'>('WITHDRAWAL');
@@ -353,8 +378,6 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
     (p) => activeCategory === 'ALL' || p.category === activeCategory
   );
 
-  const storeStatus = isStoreOpen();
-
   return (
     <div className="min-h-screen pb-24 bg-background text-foreground">
       {/* Toast Feedback */}
@@ -383,9 +406,8 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
                 <span>Horário de Funcionamento</span>
               </div>
               <p className="text-stone-400 text-xs">
-                Ter–Dom &nbsp;|&nbsp; {BUSINESS_HOURS.open} às {BUSINESS_HOURS.close}
+                {storeStatus.openTime} às {storeStatus.closeTime}
               </p>
-              <p className="text-xs text-stone-600">Fechamos toda {BUSINESS_HOURS.closedDay}</p>
             </div>
             {storeStatus.nextOpen && (
               <p className="mt-4 text-primary font-bold text-sm">
