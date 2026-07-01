@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   TrendingUp, 
   ShoppingBag, 
@@ -78,6 +78,33 @@ export default function AdminPage() {
   
   // Kitchen Live Ticking Timers
   const [currentTime, setCurrentTime] = useState<number>(0);
+
+  // ─── Som de Novo Pedido ───────────────────────────────────────────────────
+  const prevOrderCountRef = useRef<number | null>(null);
+  const [hasNewOrder, setHasNewOrder] = useState(false);
+
+  const playNewOrderSound = useCallback(() => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const playBeep = (startTime: number, freq: number, duration: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, startTime);
+        gain.gain.setValueAtTime(0.5, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+      playBeep(ctx.currentTime, 880, 0.15);        // Bip 1
+      playBeep(ctx.currentTime + 0.2, 1100, 0.15); // Bip 2
+      playBeep(ctx.currentTime + 0.4, 880, 0.25);  // Bip 3 (longo)
+    } catch (e) {
+      console.warn('Audio não suportado:', e);
+    }
+  }, []);
 
   useEffect(() => {
     setCurrentTime(Date.now());
@@ -257,6 +284,7 @@ export default function AdminPage() {
 
     if (activeTab === 'KITCHEN') {
       fetchProducts(); // Refresh catalog state too
+      setHasNewOrder(false); // Limpar badge ao entrar na cozinha
     }
 
     const interval = setInterval(() => {
@@ -265,6 +293,19 @@ export default function AdminPage() {
 
     return () => clearInterval(interval);
   }, [isAuthenticated, activeTab]);
+
+  // Detectar novos pedidos e tocar som
+  useEffect(() => {
+    if (!dashboardData) return;
+    const currentCount = dashboardData.recentOrders.length;
+    if (prevOrderCountRef.current !== null && currentCount > prevOrderCountRef.current) {
+      playNewOrderSound();
+      if (activeTab !== 'KITCHEN') {
+        setHasNewOrder(true);
+      }
+    }
+    prevOrderCountRef.current = currentCount;
+  }, [dashboardData, playNewOrderSound, activeTab]);
 
   // Load products when visiting products tab
   useEffect(() => {
@@ -551,6 +592,12 @@ export default function AdminPage() {
                   {dashboardData?.recentOrders.filter(o => o.orderStatus === 'RECEIVED' || o.orderStatus === 'PREPARING').length}
                 </span>
               ) : null}
+              {hasNewOrder && activeTab !== 'KITCHEN' && (
+                <span className="absolute top-1 right-1 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+                </span>
+              )}
             </button>
 
             <button

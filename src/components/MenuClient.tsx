@@ -1,9 +1,52 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Plus, Minus, X, Trash2, CheckCircle2, Ticket, QrCode, CreditCard, ChevronRight, MessageSquare, AlertCircle, MapPin } from 'lucide-react';
+import { ShoppingBag, Plus, Minus, X, Trash2, CheckCircle2, Ticket, QrCode, CreditCard, ChevronRight, MessageSquare, AlertCircle, MapPin, Clock } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useRouter } from 'next/navigation';
+
+// ─── Horário de Funcionamento ───────────────────────────────────────────────
+// Formato: { days: [0=Dom,1=Seg,...6=Sab], open: 'HH:MM', close: 'HH:MM' }
+const BUSINESS_HOURS = {
+  days: [0, 2, 3, 4, 5, 6], // Dom, Ter, Qua, Qui, Sex, Sáb (fecha segunda)
+  open: '17:30',
+  close: '23:00',
+  closedDay: 'segunda-feira',
+};
+
+function isStoreOpen(): { open: boolean; nextOpen: string } {
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+  const day = now.getDay();
+  const [openH, openM] = BUSINESS_HOURS.open.split(':').map(Number);
+  const [closeH, closeM] = BUSINESS_HOURS.close.split(':').map(Number);
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const openMin = openH * 60 + openM;
+  const closeMin = closeH * 60 + closeM;
+
+  const isWorkingDay = BUSINESS_HOURS.days.includes(day);
+  const isWorkingHour = nowMin >= openMin && nowMin < closeMin;
+
+  if (isWorkingDay && isWorkingHour) {
+    return { open: true, nextOpen: '' };
+  }
+
+  // Calcula próxima abertura
+  const dayNames = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+  let nextDay = (day + 1) % 7;
+  let daysAhead = 1;
+  while (!BUSINESS_HOURS.days.includes(nextDay)) {
+    nextDay = (nextDay + 1) % 7;
+    daysAhead++;
+  }
+  const isToday = nowMin < openMin && isWorkingDay;
+  const nextOpen = isToday
+    ? `hoje às ${BUSINESS_HOURS.open}`
+    : daysAhead === 1
+    ? `amanhã (${dayNames[nextDay]}) às ${BUSINESS_HOURS.open}`
+    : `${dayNames[nextDay]} às ${BUSINESS_HOURS.open}`;
+
+  return { open: false, nextOpen };
+}
 
 interface Product {
   id: string;
@@ -310,6 +353,8 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
     (p) => activeCategory === 'ALL' || p.category === activeCategory
   );
 
+  const storeStatus = isStoreOpen();
+
   return (
     <div className="min-h-screen pb-24 bg-background text-foreground">
       {/* Toast Feedback */}
@@ -320,6 +365,36 @@ export default function MenuClient({ initialProducts }: MenuClientProps) {
         <CheckCircle2 size={18} />
         Item adicionado ao carrinho!
       </div>
+
+      {/* Banner Fechado */}
+      {!storeStatus.open && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md">
+          <div className="max-w-sm w-full mx-4 bg-card-bg border border-card-border rounded-2xl p-8 text-center shadow-2xl">
+            <div className="w-20 h-20 rounded-full bg-stone-900 border border-card-border flex items-center justify-center mx-auto text-5xl mb-4">
+              🌙
+            </div>
+            <h2 className="text-2xl font-black text-white">Estamos fechados</h2>
+            <p className="text-stone-400 mt-2 text-sm">
+              No momento não estamos aceitando pedidos.
+            </p>
+            <div className="mt-5 bg-stone-950 border border-card-border rounded-xl p-4 space-y-2 text-sm">
+              <div className="flex items-center justify-center gap-2 text-stone-300 font-semibold">
+                <Clock size={15} className="text-primary" />
+                <span>Horário de Funcionamento</span>
+              </div>
+              <p className="text-stone-400 text-xs">
+                Ter–Dom &nbsp;|&nbsp; {BUSINESS_HOURS.open} às {BUSINESS_HOURS.close}
+              </p>
+              <p className="text-xs text-stone-600">Fechamos toda {BUSINESS_HOURS.closedDay}</p>
+            </div>
+            {storeStatus.nextOpen && (
+              <p className="mt-4 text-primary font-bold text-sm">
+                ⏰ Abrimos {storeStatus.nextOpen}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/90 border-b border-card-border shadow-lg">

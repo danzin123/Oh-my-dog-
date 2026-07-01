@@ -1,0 +1,36 @@
+{
+  "name": "Oh my Dog! — Delivery de Hotdogs",
+  "short_name": "Oh my Dog!",
+  "description": "Os melhores hotdogs de Bragança Paulista. Peça agora e receba em casa!",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0908",
+  "theme_color": "#ef4444",
+  "orientation": "portrait-primary",
+  "lang": "pt-BR",
+  "categories": ["food", "shopping"],
+  "icons": [
+    {
+      "src": "/logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Ver Cardápio",
+      "short_name": "Cardápio",
+      "description": "Abrir o cardápio de hotdogs",
+      "url": "/",
+      "icons": [{ "src": "/logo.jpg", "sizes": "192x192" }]
+    }
+  ]
+}
