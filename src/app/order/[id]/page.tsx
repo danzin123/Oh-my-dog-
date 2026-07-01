@@ -137,12 +137,12 @@ export default function OrderTrackingPage() {
     },
     { 
       title: order.deliveryType === 'DELIVERY' ? 'A Caminho' : 'No Balcão', 
-      desc: order.deliveryType === 'DELIVERY' ? 'Saiu para entrega com o motoboy' : 'Lanche pronto esperando você', 
+      desc: order.deliveryType === 'DELIVERY' ? 'Saiu para entrega com o motoboy' : 'Hot Dog pronto esperando você', 
       icon: order.deliveryType === 'DELIVERY' ? MapPin : Check 
     },
     { 
       title: 'Entregue', 
-      desc: 'Lanche entregue, aproveite!', 
+      desc: 'Hot Dog entregue, aproveite!', 
       icon: Check 
     }
   ];

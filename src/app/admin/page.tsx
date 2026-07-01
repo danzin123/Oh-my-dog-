@@ -1283,7 +1283,7 @@ export default function AdminPage() {
                                 className="w-full py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl font-black text-xs cursor-pointer transition-all uppercase tracking-wider shadow-md flex items-center justify-center gap-1.5"
                               >
                                 <ShoppingBag size={14} />
-                                Entregar Lanche 📦
+                                Entregar Hot Dog 📦
                               </button>
                             )}
                           </div>

@@ -43,13 +43,13 @@ export async function PUT(req: NextRequest) {
     // Disparar notificações de WhatsApp com base no status do preparo
     const appUrl = process.env.APP_URL || 'http://localhost:3000';
     if (orderStatus === 'READY' && order.deliveryType === 'WITHDRAWAL') {
-      const text = `Olá, ${order.clientName}! Seu Oh my Dog está pronto e te aguardando no balcão! Pode vir buscar seu lanche quentinho! 🌭📦✨\n\nAcompanhe seu pedido aqui: ${appUrl}/order/${order.id}`;
+      const text = `Olá, ${order.clientName}! Seu Oh my Dog está pronto e te aguardando no balcão! Pode vir buscar seu Hot Dog quentinho! 🌭📦✨\n\nAcompanhe seu pedido aqui: ${appUrl}/order/${order.id}`;
       await sendWhatsAppMessage(order.clientPhone, text);
     } else if (orderStatus === 'DISPATCHED' && order.deliveryType === 'DELIVERY') {
       const text = `Olá, ${order.clientName}! Seu Oh my Dog acabou de sair para entrega! O motoboy está a caminho do seu endereço: ${order.addressStreet}, ${order.addressNumber} (${order.neighborhoodName}). 🏍️🌭🔥\n\nAcompanhe o trajeto aqui: ${appUrl}/order/${order.id}`;
       await sendWhatsAppMessage(order.clientPhone, text);
     } else if (orderStatus === 'DELIVERED') {
-      const text = `Olá, ${order.clientName}! Seu Oh my Dog foi entregue com sucesso! 🎉 Esperamos que goste do lanche! Bom apetite! 🌭😋\n\nAcompanhe os detalhes: ${appUrl}/order/${order.id}`;
+      const text = `Olá, ${order.clientName}! Seu Oh my Dog foi entregue com sucesso! 🎉 Esperamos que goste do Hot Dog! Bom apetite! 🌭😋\n\nAcompanhe os detalhes: ${appUrl}/order/${order.id}`;
       await sendWhatsAppMessage(order.clientPhone, text);
     }
 
